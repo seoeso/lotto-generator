@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>로또 번호 생성기</title>
+  <meta name="description" content="간단한 로또 번호 생성기 — 1~45 사이의 중복 없는 6개 숫자 + 보너스 생성. 여러 세트 생성, 복사 및 CSV 다운로드 지원." />
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#7c3aed;
+      --muted:#94a3b8;
+      --glass: rgba(255,255,255,0.03);
+      --success:#16a34a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, "Noto Sans KR", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #071020 0%, #0d2233 100%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:980px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      border-radius:14px;
+      padding:20px;
+    }
+
+    header{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .logo{
+      width:56px;height:56px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#06b6d4);
+      display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;
+      color:white;box-shadow:0 6px 18px rgba(124,58,237,0.18);
+    }
+    h1{margin:0;font-size:18px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:10px;
+      padding:14px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+    input[type="number"]{
+      width:100px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);
+      background:var(--glass);color:inherit;font-size:14px;
+    }
+
+    .btn{
+      background:linear-gradient(180deg,var(--accent),#0ea5e9);
+      border:none;color:white;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer;
+      box-shadow:0 6px 18px rgba(14,165,233,0.12);
+    }
+    .btn.secondary{
+      background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);
+      box-shadow:none;padding:8px 12px;font-weight:600;
+    }
+
+    .result-area{margin-top:18px;display:grid;gap:12px}
+    .set{
+      display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.02);
+    }
+    .balls{display:flex;gap:8px;align-items:center}
+    .ball{
+      width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;
+      color:#071024;background:linear-gradient(180deg,#fff,#f1f5f9);box-shadow:0 6px 10px rgba(2,6,23,0.3);
+      font-size:15px;
+    }
+    .ball.small{width:36px;height:36px;font-size:13px}
+    .meta{flex:1;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .meta .info{color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:8px}
+
+    .note{color:var(--muted);font-size:13px;margin-top:10px}
+
+    footer{margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+    .small{font-size:12px;color:var(--muted)}
+
+    @media (max-width:640px){
+      .ball{width:36px;height:36px}
+      .btn{padding:8px 10px}
+      .controls{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <header>
+      <div class="logo">L+</div>
+      <div>
+        <h1>로또 번호 생성기</h1>
+        <p class="lead">간단하고 빠른 1~45 로또 번호 랜덤 생성기 — 여러 세트 생성, 복사, CSV 다운로드 지원</p>
+      </div>
+    </header>
+
+    <section class="controls card" aria-label="controls">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div>
+          <label for="setsCount">생성할 세트 수 (1~10)</label>
+          <input id="setsCount" type="number" min="1" max="10" value="1" />
+        </div>
+
+        <div>
+          <label for="sortOn">번호 정렬</label>
+          <select id="sortOn" style="padding:8px 10px;border-radius:8px;background:var(--glass);border:1px solid rgba(255,255,255,0.04);color:inherit;">
+            <option value="asc">오름차순</option>
+            <option value="none">랜덤(제비 뽑기 스타일)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <button id="generateBtn" class="btn" aria-label="Generate Lotto">생성하기</button>
+        <button id="copyAllBtn" class="btn secondary" title="모든 결과를 클립보드에 복사">모두 복사</button>
+        <button id="downloadCsvBtn" class="btn secondary" title="CSV로 다운로드">CSV 다운로드</button>
+      </div>
+    </section>
+
+    <section id="resultArea" class="result-area" aria-live="polite" aria-atomic="true"></section>
+
+    <p class="note">참고: 로또 1등 확률은 약 1 / 8,145,060이야. 이건 단순한 랜덤 번호 생성기일 뿐 당첨을 보장하지 않아 😉</p>
+
+    <footer>
+      <div class="small">© 로또 생성기 · 클라이언트 사이드로 작동함 (서버 불필요)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="clearBtn" class="btn secondary">결과 지우기</button>
+        <div class="small" id="statusMsg" style="min-width:120px;text-align:right"></div>
+      </div>
+    </footer>
+  </main>
+
+<script>
+  // 유틸: Fisher-Yates 셔플
+  function shuffle(array){
+    for(let i = array.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // 1~45 배열 생성
+  function numbers1to45(){
+    const arr = new Array(45);
+    for(let i=0;i<45;i++) arr[i] = i+1;
+    return arr;
+  }
+
+  // 하나의 세트 생성: 6개 + 보너스
+  function generateSet(sortMode='asc'){
+    const pool = numbers1to45();
+    shuffle(pool);
+    // 첫 7개 뽑아서 앞 6개는 당첨번호, 마지막은 보너스
+    const picked = pool.slice(0,7);
+    const main = picked.slice(0,6);
+    const bonus = picked[6];
+    if(sortMode === 'asc'){
+      main.sort((a,b)=>a-b);
+    } else if(sortMode === 'none'){
+      // 유지 랜덤 (이미 셔플돼 있음), 다만 main을 그대로 사용
+    }
+    return { main, bonus };
+  }
+
+  // DOM 관련
+  const resultArea = document.getElementById('resultArea');
+  const generateBtn = document.getElementById('generateBtn');
+  const copyAllBtn = document.getElementById('copyAllBtn');
+  const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const setsCountInput = document.getElementById('setsCount');
+  const sortSelect = document.getElementById('sortOn');
+  const statusMsg = document.getElementById('statusMsg');
+
+  function showStatus(msg, timeout=2000){
+    statusMsg.textContent = msg;
+    if(timeout>0){
+      setTimeout(()=>{ statusMsg.textContent = '' }, timeout);
+    }
+  }
+
+  function renderSets(sets){
+    resultArea.innerHTML = '';
+    sets.forEach((s, idx) => {
+      const el = document.createElement('div');
+      el.className = 'set card';
+      const balls = document.createElement('div');
+      balls.className = 'balls';
+      s.main.forEach(n=>{
+        const b = document.createElement('div');
+        b.className = 'ball';
+        b.textContent = n;
+        // 색상 토글 (간단)
+        const colorGroup = Math.floor((n-1)/10);
+        const bgColors = [
+          'linear-gradient(180deg,#fff,#f8fafc)',
+          'linear-gradient(180deg,#fde68a,#fef3c7)',
+          'linear-gradient(180deg,#fbcfe8,#fce7f3)',
+          'linear-gradient(180deg,#bbf7d0,#dcfce7)',
+          'linear-gradient(180deg,#bfdbfe,#eff8ff)'
+        ];
+        b.style.background = bgColors[colorGroup] || bgColors[4];
+        balls.appendChild(b);
+      });
+
+      const bonus = document.createElement('div');
+      bonus.className = 'ball small';
+      bonus.textContent = s.bonus;
+      bonus.title = '보너스 번호';
+      bonus.style.background = 'linear-gradient(180deg,#ffd4d4,#fff1f0)';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const info = document.createElement('div');
+      info.className = 'info';
+      info.innerHTML = `<strong>세트 ${idx+1}</strong> · ${s.main.join(', ')} · <em>보너스 ${s.bonus}</em>`;
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn secondary';
+      copyBtn.textContent = '복사';
+      copyBtn.addEventListener('click', ()=> {
+        navigator.clipboard.writeText(s.main.join(', ') + ' 보너스 ' + s.bonus)
+          .then(()=> showStatus('복사됨'))
+          .catch(()=> showStatus('복사 실패'));
+      });
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn secondary';
+      saveBtn.textContent = 'CSV 저장';
+      saveBtn.addEventListener('click', ()=>{
+        const csv = `세트,번호1,번호2,번호3,번호4,번호5,번호6,보너스\n${idx+1},${s.main.join(',')},${s.bonus}\n`;
+        downloadBlob(csv, `lotto_set_${idx+1}.csv`, 'text/csv;charset=utf-8;');
+      });
+
+      actions.appendChild(copyBtn);
+      actions.appendChild(saveBtn);
+
+      meta.appendChild(info);
+      meta.appendChild(actions);
+
+      el.appendChild(balls);
+      el.appendChild(bonus);
+      el.appendChild(meta);
+
+      resultArea.appendChild(el);
+    });
+  }
+
+  function downloadBlob(content, filename, type){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  generateBtn.addEventListener('click', ()=>{
+    const count = Math.min(Math.max(parseInt(setsCountInput.value||1),1),10);
+    const sortMode = sortSelect.value;
+    const sets = [];
+    for(let i=0;i<count;i++){
+      sets.push(generateSet(sortMode));
+    }
+    renderSets(sets);
+    showStatus(`${count}개 세트 생성됨`);
+  });
+
+  copyAllBtn.addEventListener('click', ()=>{
+    const sets = Array.from(resultArea.querySelectorAll('.set'));
+    if(sets.length === 0){
+      showStatus('생성된 결과가 없어요');
+      return;
+    }
+    const lines = sets.map((el,idx)=>{
+      const text = el.querySelector('.meta .info').textContent;
+      return text.trim();
+    });
+    const total = lines.join('\\n');
+    navigator.clipboard.writeText(total)
+      .then(()=> showStatus('모든 결과 복사됨'))
+      .catch(()=> showStatus('복사 실패'));
+  });
+
+  downloadCsvBtn.addEventListener('click', ()=>{
+    const sets = Array.from(resultArea.querySelectorAll('.set'));
+    if(sets.length === 0){
+      showStatus('생성된 결과가 없어요');
+      return;
+    }
+    // build CSV header
+    let csv = '세트,번호1,번호2,번호3,번호4,번호5,번호6,보너스\\n';
+    sets.forEach((el,idx)=>{
+      const info = el.querySelector('.meta .info').textContent;
+      // info 예: "세트 1 · 1, 3, 5, 7, 9, 11 · 보너스 23"
+      const match = info.match(/세트\\s*(\\d+)\\s*·\\s*([\\d,\\s]+)·\\s*보너스\\s*(\\d+)/);
+      if(match){
+        const setNo = match[1];
+        const nums = match[2].split(',').map(s=>s.trim()).join(',');
+        const bonus = match[3];
+        csv += `${setNo},${nums},${bonus}\\n`;
+      } else {
+        // fallback: parse from DOM
+        const nums = Array.from(el.querySelectorAll('.ball')).slice(0,6).map(b=>b.textContent).join(',');
+        const bonus = el.querySelector('.ball.small').textContent;
+        csv += `${idx+1},${nums},${bonus}\\n`;
+      }
+    });
+    downloadBlob(csv, 'lotto_sets.csv', 'text/csv;charset=utf-8;');
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    resultArea.innerHTML = '';
+    showStatus('결과 지움');
+  });
+
+  // 키보드로 Enter도 작동하게
+  document.getElementById('setsCount').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') generateBtn.click();
+  });
+
+  // 초기 한 세트 자동 생성
+  window.addEventListener('load', ()=>{ generateBtn.click(); });
+</script>
+</body>
+</html>
